@@ -3,10 +3,8 @@
 ns=$1
 port=$2
 if [[ $port == "" ]] ; then
-
 	echo "2 parameters needed => namespace port"
 	exit;
-
 fi
 
 mkdir /opt/$ns
@@ -43,11 +41,10 @@ aptitude -y  install ntp jq dnsutils net-tools
 # OpenEBS for PV/PVC 
 ../openebs/install_openebs.sh
 
+
+
+
 # argoCD
 #argocd/install_argocd.sh
-
-mkdir ~/.ssh
-touch ~/.ssh/authorized_keys
-chmod 600 ~/.ssh -Rf
 
 exit;
