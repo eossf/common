@@ -30,7 +30,7 @@ aptitude -y  install ntp jq dnsutils net-tools
 ../helm/install_helm.sh
 
 # AWS cli
-../aws/install_aws.sh
+#../aws/install_aws.sh
 
 # k3d/k3s
 ../k3d/install_k3d.sh $ns
@@ -38,11 +38,8 @@ aptitude -y  install ntp jq dnsutils net-tools
 # create the cluster
 ../k3d/create_k3d.sh $ns $port
 
-# OpenEBS for PV/PVC 
+# OpenEBS for PV/PVC
 ../openebs/install_openebs.sh
-
-
-
 
 # argoCD
 #argocd/install_argocd.sh
