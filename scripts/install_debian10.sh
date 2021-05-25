@@ -7,8 +7,6 @@ if [[ $port == "" ]] ; then
 	exit;
 fi
 
-mkdir /opt/$ns
-
 apt-get -y update
 
 # optional to install
