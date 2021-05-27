@@ -7,13 +7,11 @@ if [[ $port == "" ]] ; then
 	exit;
 fi
 
-apt-get -y update
-
-# optional to install
-apt-get -y install aptitude
+apt -y update
+apt -y upgrade
 
 # nslookup netstats ...
-aptitude -y  install ntp jq dnsutils net-tools
+apt -y install ntp jq dnsutils net-tools
 
 # go
 ../go/install_go.sh
