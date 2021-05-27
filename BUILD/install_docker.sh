@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # docker 
-aptitude -y  install apt-transport-https ca-certificates gnupg-agent software-properties-common
+apt -y  install apt-transport-https ca-certificates gnupg-agent software-properties-common
 curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 apt-key fingerprint 0EBFCD88
 
@@ -19,5 +19,5 @@ add-apt-repository \
 #   stable"
 # verify your /etc/apt/sources.list and comment download.docker.com
 
-aptitude -y update
-aptitude -y  install docker-ce docker-ce-cli containerd.io unzip
+apt -y update
+apt -y  install docker-ce docker-ce-cli containerd.io unzip
