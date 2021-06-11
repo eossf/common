@@ -1,10 +1,9 @@
 # Install production ready K3S Cluster
-
-CentOS8 installation
-echo "VLAN: 10.24.96/24"
-
 ## setup public itf
 ````bash
+echo "CentOS8 installation"
+echo "VLAN: 10.24.96/24"
+
 nmcli dev show | grep "GENERAL.DEVICE" | while read -r line ; do
 eth=`echo $line | cut -d" " -f2`
 ip=`ip -o -4 addr list $eth | awk '{print $4}' | cut -d/ -f1`
@@ -12,7 +11,6 @@ echo "$eth IP="$ip":"
 if [[ $ip = "" ]] || [[ $ip =~ ^10\.24\.96\. ]]; then
     echo "SET ip private "$INC
     cat <<EOF > /etc/sysconfig/network-scripts/ifcfg-$eth
-# Private network: net60c223f37da25
 TYPE="Ethernet"
 DEVICE=$eth
 ONBOOT="yes"
