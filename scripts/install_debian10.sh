@@ -22,6 +22,9 @@ apt -y install ntp jq dnsutils net-tools
 # kubernetes
 ../kub/install_kubectl.sh
 
+# krew plugin manager for kubectl
+../krew/install_krew.sh
+
 # helm 3
 ../helm/install_helm.sh
 
