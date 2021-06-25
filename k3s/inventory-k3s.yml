@@ -1,0 +1,60 @@
+---
+
+all:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  children:
+    kube_cluster:
+      vars:
+        docker_registry: http://192.168.122.199
+        k3s_cluster_secret: Ahguario7Eefooph6ooweish9peenaeshaideeFokuay7iehoe3ahgei3aithoo7 # This is a secret and should be Vaulted!
+        k3s_encryption_secret: "4mLnvo0Lrb7iSUv7yF5IKOYvEkcnGfyBauzhCjtNRgc=" # This is a secret and should be Vaulted!
+        k3s_version: v1.20.5+k3s1
+        external_interface: eth1
+        internal_interface: eth0
+        metallb_external_ip_range: 192.168.1.200-192.168.1.240
+        metallb_internal_ip_range: 192.168.122.200-192.168.122.240
+        falco_sidekick_slack: "https://hooks.slack.com/services/XXXXX-XXXX-XXXX" # This is a secret and should be Vaulted!
+      children:
+        kube_master:
+          hosts:
+            master01:
+              ansible_host: 173.199.70.97   #192.168.0.3
+              ansible_ssh_user: "root"
+              ansible_ssh_private_key_file: "/home/metairie/.ssh/id_rsa"
+              ansible_become: true
+              ansible_become_user: "root"
+            master02:
+              ansible_host: 217.69.9.132   #192.168.0.4
+              ansible_ssh_user: "root"
+              ansible_ssh_private_key_file: "/home/metairie/.ssh/id_rsa"
+              ansible_become: true
+              ansible_become_user: "root"
+            master03:
+              ansible_host: 140.82.54.61   #192.168.0.5
+              ansible_ssh_user: "root"
+              ansible_ssh_private_key_file: "/home/metairie/.ssh/id_rsa"
+              ansible_become: true
+              ansible_become_user: "root"
+        kube_node:
+          hosts:
+            worker01:
+              ansible_host: 217.69.6.244   #192.168.0.6
+              ansible_ssh_user: "root"
+              ansible_ssh_private_key_file: "/home/metairie/.ssh/id_rsa"
+              ansible_become: true
+              ansible_become_user: "root"
+            worker02:
+              ansible_host: 136.244.113.214 #192.168.0.7
+              ansible_ssh_user: "root"
+              ansible_ssh_private_key_file: "/home/metairie/.ssh/id_rsa"
+              ansible_become: true
+              ansible_become_user: "root"
+            worker03:
+              ansible_host: 199.247.9.91   #192.168.0.8
+              ansible_ssh_user: "root"
+              ansible_ssh_private_key_file: "/home/metairie/.ssh/id_rsa"
+              ansible_become: true
+              ansible_become_user: "root"
+
+...
