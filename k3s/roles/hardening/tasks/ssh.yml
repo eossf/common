@@ -70,13 +70,13 @@
 
 # CIS 5.2.8
 # STIG 040370
-- name: Disable SSH Password Root Login
-  lineinfile:
-    state: present
-    dest: /etc/ssh/sshd_config
-    regexp: "^#PermitRootLogin|^PermitRootLogin"
-    line: "PermitRootLogin {{ ssh_root_login }}"
-    validate: /usr/sbin/sshd -t -f %s
+#- name: Disable SSH Password Root Login
+#  lineinfile:
+#    state: present
+#    dest: /etc/ssh/sshd_config
+#    regexp: "^#PermitRootLogin|^PermitRootLogin"
+#    line: "PermitRootLogin {{ ssh_root_login }}"
+#    validate: /usr/sbin/sshd -t -f %s
 
 # CIS 5.2.9
 # STIG 040460
