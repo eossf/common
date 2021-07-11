@@ -69,8 +69,8 @@ It is **highly recommended** to follow an internal/external network layout for y
 To enable this just give two different names to the internal and external interface, according to your distro of choiche naming scheme
 
 ```yaml
-external_interface: eth0
-internal_interface: eth1
+external_interface: ens7
+internal_interface: ens7
 ```
 
 Also you can decide here what CIDR should your cluster use
