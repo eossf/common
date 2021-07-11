@@ -85,7 +85,7 @@ service_cidr: 10.44.0.0/16
 Lots of customization here, you can configure your Kubernetes cluster version
 
 ```yaml
-k3s_version: v1.20.5+k3s1
+k3s_version: v1.21.2+k3s1
 ```
 
 You can configure your ingress hostnames, if not specified (default) it will use nip.io to resolve your IPs

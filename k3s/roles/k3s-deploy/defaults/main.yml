@@ -3,7 +3,7 @@
 #
 ingress_hostname: default
 
-k3s_version: v1.20.5+k3s1
+k3s_version: v1.21.2+k3s1
 k3s_binary_path: /usr/local/bin
 kubectl_cmd: "{{ k3s_binary_path }}/k3s kubectl"
 
