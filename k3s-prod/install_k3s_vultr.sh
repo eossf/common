@@ -164,7 +164,7 @@ function parse_node_searched()
   for t in ${NODES_COUNT[@]}; do
     NODE=`curl -s "https://api.vultr.com/v2/instances/${t}" -X GET -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.'`
     NODE_LABEL=`echo $NODE | jq '.instance.label' | tr -d '"'`
-    echo "Node "$NODE_LABEL" found"
+    #echo "Node "$NODE_LABEL" found"
     if [[ $NODE_LABEL == "$searched" ]]; then
       echo $searched" is the node searched"
       NODE_INTERNAL_IP=`echo $NODE | jq '.instance.internal_ip' | tr -d '"'`
@@ -186,7 +186,7 @@ function install_master()
 
 function install_node()
 {
-
+  local searched=$1
   ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
   ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "update-ca-certificates"
   ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' K3S_URL='https://"$IPMASTER":6443' sh -s -"
