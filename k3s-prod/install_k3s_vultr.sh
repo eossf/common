@@ -1,14 +1,21 @@
 #!/bin/bash
 
 # default value
-$DEFAULTNODELIST = "MASTER01 MASTER02 MASTER03 NODE01 NODE02 NODE03"
+DEFAULTNODELIST="MASTER01 MASTER02 MASTER03 NODE01 NODE02 NODE03"
+
+# ubuntu 21.10
 UBUNTU="517"
+
+# centos8 x64
 CENTOS="362"
 plan_master="vc2-2c-4gb"
 plan_node="vc2-1c-2gb"
-osid="$UBUNTU"
+osid=$UBUNTU
 region="cdg"
+number_node=0
+number_master=0
 
+# --- params ---
 nodelist="$1"
 vultrapikey="$2"
 k3stoken="$3"
@@ -49,7 +56,6 @@ function valid_ip()
 
 echo "Get private network list"
 APN=`curl -s "https://api.vultr.com/v2/private-networks" -X GET -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.networks[].id' | tr -d '"'`
-
 if [[ $APN == "" ]]; then 
     echo "Create one private network"
     APN=`curl -s "https://api.vultr.com/v2/private-networks" \
@@ -63,17 +69,20 @@ if [[ $APN == "" ]]; then
         "v4_subnet_mask" : 16
     }' | jq '.network.id' | tr -d '"'`
 fi
+echo "VPN id : $APN"
 
 echo "Get SSH key for accessing servers"
 SSHKEY_ID=`curl -s "https://api.vultr.com/v2/ssh-keys"   -X GET   -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.ssh_keys[].id' | tr -d '"'`
 
-echo "Create masters and workers"
+echo "Create masters and nodes"
 for node in $nodelist
 do
   if [[ ${node} =~ "MASTER" ]]; then
     plan=$plan_master
+    number_master=$((number_master++))
   else
     plan=$plan_node
+    number_node=$((number_node++))
   fi
 DATA='{"region":"'$region'",
 "plan":"'$plan'",
@@ -89,7 +98,12 @@ DATA='{"region":"'$region'",
   echo
 done
 
-echo "Wait provisionning finishes ..."
+echo "OSID           = $osid"
+echo "NODELIST       = $nodelist"
+echo "VM master      = $plan_master"
+echo "VM node        = $plan_node"
+
+echo "Wait 90s provisionning finishes ..."
 sleep 90
 echo
 
@@ -104,7 +118,7 @@ for t in ${NODES_COUNT[@]}; do
     NODE_MAIN_IP=`echo $NODE | jq '.instance.main_ip' | tr -d '"'`
 
     if [[ $osid == "$CENTOS" ]]; then
-      echo "CentOS 8 Linux detected"
+      echo "CentOS Linux detected"
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "nmcli | grep 'disconnected' | cut -d':' -f1 > /tmp/ITF"
       scp -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP":/tmp/ITF /tmp/ITF
       ITF=`cat /tmp/ITF`
@@ -119,7 +133,7 @@ for t in ${NODES_COUNT[@]}; do
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "nmcli con up 'System "$ITF"'" 
       fi
     if [[ $osid == "$UBUNTU" ]]; then
-      echo "Ubuntu 20.10 Linux detected"
+      echo "Ubuntu Linux detected"
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "ip a | grep -iA2 '3: enp' | grep -i 'link/ether' | cut -d' ' -f6 > /tmp/MAC"
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "ip a | grep -i '3: enp' | cut -d':' -f2 | tr -d ' ' > /tmp/ITF"
       scp -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP":/tmp/MAC /tmp/MAC
@@ -148,7 +162,6 @@ function parse_node_searched()
   local searched=$1
   local i=0
   for t in ${NODES_COUNT[@]}; do
-    
     NODE=`curl -s "https://api.vultr.com/v2/instances/${t}" -X GET -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.'`
     NODE_LABEL=`echo $NODE | jq '.instance.label' | tr -d '"'`
     echo "Node "$NODE_LABEL" found"
@@ -161,6 +174,22 @@ function parse_node_searched()
       break
     fi
   done
+}
+
+function install_master()
+{
+  local searched=$1
+  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
+  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "update-ca-certificates"
+  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' INSTALL_K3S_EXEC='--disable traefik --server https://"$IPMASTER":6443' sh -s -"
+}
+
+function install_node()
+{
+
+  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
+  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "update-ca-certificates"
+  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${searched}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' K3S_URL='https://"$IPMASTER":6443' sh -s -"
 }
 
 echo "start cluster K3s - init cluster"
@@ -192,9 +221,7 @@ if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
   # join cluster
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "update-ca-certificates"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' INSTALL_K3S_EXEC='--disable traefik --server https://"$IPMASTER":6443' sh -s -"
+  install_master $searched
 fi
 
 echo " ------------------------------------------- "
@@ -207,9 +234,7 @@ if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
   # join cluster
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "update-ca-certificates"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' INSTALL_K3S_EXEC='--disable traefik --server https://"$IPMASTER":6443' sh -s -"
+  install_master $searched
 fi
 
 echo " ------------------------------------------- "
@@ -222,10 +247,8 @@ if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
   # join cluster
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "update-ca-certificates"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' K3S_URL='https://"$IPMASTER":6443' sh -s -"
- fi
+  install_node $searched
+fi
 
 echo " ------------------------------------------- "
 searched="NODE02"
@@ -237,9 +260,7 @@ if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
   # join cluster
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "update-ca-certificates"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' K3S_URL='https://"$IPMASTER":6443' sh -s -"
+  install_node $searched
 fi
 
 echo " ------------------------------------------- "
@@ -252,7 +273,5 @@ if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
   # join cluster
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sk https://"$IPMASTER":6443/cacerts -o /usr/local/share/ca-certificates/k3s.crt"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "update-ca-certificates"
-  ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' K3S_URL='https://"$IPMASTER":6443' sh -s -"
+  install_node $searched
 fi
