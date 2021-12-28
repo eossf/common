@@ -104,8 +104,8 @@ DATA='{"region":"'$region'",
   echo
 done
 
-echo "Wait 90s provisionning finishes ..."
-sleep 90
+echo "Wait provisionning finishes ..."
+sleep $((30+(number_master+number_node)*10))
 echo
 
 echo "Get Nodes and set internal interface "
