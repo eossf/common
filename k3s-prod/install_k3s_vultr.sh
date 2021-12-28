@@ -54,6 +54,12 @@ function valid_ip()
     return $stat
 }
 
+echo " ----------------------------"
+echo "OSID           = $osid"
+echo "NODELIST       = $nodelist"
+echo "VM master      = $plan_master"
+echo "VM node        = $plan_node"
+
 echo "Get private network list"
 APN=`curl -s "https://api.vultr.com/v2/private-networks" -X GET -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.networks[].id' | tr -d '"'`
 if [[ $APN == "" ]]; then 
@@ -97,11 +103,6 @@ DATA='{"region":"'$region'",
   curl -s "https://api.vultr.com/v2/instances" -X POST -H "Authorization: Bearer ${VULTR_API_KEY}" -H "Content-Type: application/json" --data "${DATA}"
   echo
 done
-
-echo "OSID           = $osid"
-echo "NODELIST       = $nodelist"
-echo "VM master      = $plan_master"
-echo "VM node        = $plan_node"
 
 echo "Wait 90s provisionning finishes ..."
 sleep 90
@@ -164,7 +165,6 @@ function parse_node_searched()
   for t in ${NODES_COUNT[@]}; do
     NODE=`curl -s "https://api.vultr.com/v2/instances/${t}" -X GET -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.'`
     NODE_LABEL=`echo $NODE | jq '.instance.label' | tr -d '"'`
-    #echo "Node "$NODE_LABEL" found"
     if [[ $NODE_LABEL == "$searched" ]]; then
       echo $searched" is the node searched"
       NODE_INTERNAL_IP=`echo $NODE | jq '.instance.internal_ip' | tr -d '"'`
@@ -207,7 +207,7 @@ if [[ "${node_returned[@]}" == "" ]]; then
     exit
 else
   IPMASTER=${node_returned[0]}
-  # cluster init MASTER01
+  echo "$searched (${node_returned[1]}) is creating cluster "
   ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"${node_returned[1]}" "curl -sfL https://get.k3s.io | K3S_TOKEN='"$K3S_TOKEN"' INSTALL_K3S_EXEC='--disable traefik --cluster-init --cluster-cidr=192.168.120.0/21' sh -s -"
 fi
 
@@ -220,8 +220,8 @@ parse_node_searched $searched
 if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
-  # join cluster
-  install_master $searched
+  echo "$searched (${node_returned[1]}) is joining cluster "
+  install_master ${node_returned[1]}
 fi
 
 echo " ------------------------------------------- "
@@ -233,8 +233,8 @@ parse_node_searched $searched
 if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
-  # join cluster
-  install_master $searched
+  echo "$searched (${node_returned[1]}) is joining cluster "
+  install_master ${node_returned[1]}
 fi
 
 echo " ------------------------------------------- "
@@ -246,8 +246,8 @@ parse_node_searched $searched
 if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
-  # join cluster
-  install_node $searched
+  echo "$searched (${node_returned[1]}) is joining cluster "
+  install_node ${node_returned[1]}
 fi
 
 echo " ------------------------------------------- "
@@ -259,8 +259,8 @@ parse_node_searched $searched
 if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
-  # join cluster
-  install_node $searched
+  echo "$searched (${node_returned[1]}) is joining cluster "
+  install_node ${node_returned[1]}
 fi
 
 echo " ------------------------------------------- "
@@ -272,6 +272,6 @@ parse_node_searched $searched
 if [[ "${node_returned[@]}" == "" ]]; then
     echo "Error no "$searched" node found"
 else
-  # join cluster
-  install_node $searched
+  echo "$searched (${node_returned[1]}) is joining cluster "
+  install_node ${node_returned[1]}
 fi
