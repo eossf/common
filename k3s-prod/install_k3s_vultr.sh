@@ -1,7 +1,12 @@
 #!/bin/bash
 
-vultrapikey="$1"
-k3stoken="$2"
+$DEFAULTNODELIST = "MASTER01 MASTER02 MASTER03 NODE01 NODE02 NODE03"
+nodelist="$1"
+vultrapikey="$2"
+k3stoken="$3"
+if [[ $nodelist == "" ]] ; then
+	nodelist=$DEFAULTNODELIST
+fi
 if [[ $vultrapikey == "" ]] ; then
 	vultrapikey=`env | grep "VULTR_API_KEY" | cut -d"=" -f2`
   if [[ $vultrapikey == "" ]] ; then
@@ -20,7 +25,7 @@ VULTR_API_KEY=$vultrapikey
 K3S_TOKEN=$k3stoken
 plan_master="vc2-2c-4gb"
 plan_node="vc2-1c-2gb"
-osid="413"
+osid="517"
 region="cdg"
 
 function valid_ip()
@@ -59,24 +64,24 @@ echo "Get SSH key for accessing servers"
 SSHKEY_ID=`curl -s "https://api.vultr.com/v2/ssh-keys"   -X GET   -H "Authorization: Bearer ${VULTR_API_KEY}" | jq '.ssh_keys[].id' | tr -d '"'`
 
 echo "Create masters and workers"
-for node in MASTER01 NODE01
-#MASTER01 MASTER02 MASTER03 NODE01 NODE02 NODE03
+for node in $nodelist
 do
   if [[ ${node} =~ "MASTER" ]]; then
     plan=$plan_master
   else
     plan=$plan_node
   fi
-  DATA='{ "region" : "'$region'",
-  "plan" : "'$plan'",
-  "label" : "'$node'",
-  "hostname" : "'$node'",
-  "os_id" : '$osid',
-  "attach_private_network" : ["'$APN'"],
-  "sshkey_id" : ["'$SSHKEY_ID'"]
-  }'
+DATA='{"region":"'$region'",
+"plan":"'$plan'",
+"label":"'$node'",
+"hostname":"'$node'",
+"os_id":'$osid',
+"attach_private_network":["'$APN'"],
+"sshkey_id":["'$SSHKEY_ID'"]
+}'
+
   echo "Create node:"$node
-  curl -s "https://api.vultr.com/v2/instances" -X POST -H "Authorization: Bearer ${VULTR_API_KEY}" -H "Content-Type: application/json" --data "$DATA"
+  curl -s "https://api.vultr.com/v2/instances" -X POST -H "Authorization: Bearer ${VULTR_API_KEY}" -H "Content-Type: application/json" --data "${DATA}"
   echo
 done
 
