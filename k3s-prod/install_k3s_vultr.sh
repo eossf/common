@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# default value
 $DEFAULTNODELIST = "MASTER01 MASTER02 MASTER03 NODE01 NODE02 NODE03"
+UBUNTU="517"
+CENTOS="362"
+plan_master="vc2-2c-4gb"
+plan_node="vc2-1c-2gb"
+osid="$UBUNTU"
+region="cdg"
+
 nodelist="$1"
 vultrapikey="$2"
 k3stoken="$3"
@@ -23,10 +31,6 @@ if [[ $k3stoken == "" ]] ; then
 fi
 VULTR_API_KEY=$vultrapikey
 K3S_TOKEN=$k3stoken
-plan_master="vc2-2c-4gb"
-plan_node="vc2-1c-2gb"
-osid="517"
-region="cdg"
 
 function valid_ip()
 {
@@ -99,7 +103,7 @@ for t in ${NODES_COUNT[@]}; do
     NODE_INTERNAL_IP=`echo $NODE | jq '.instance.internal_ip' | tr -d '"'`
     NODE_MAIN_IP=`echo $NODE | jq '.instance.main_ip' | tr -d '"'`
 
-    if [[ $osid == "362" ]]; then
+    if [[ $osid == "$CENTOS" ]]; then
       echo "CentOS 8 Linux detected"
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "nmcli | grep 'disconnected' | cut -d':' -f1 > /tmp/ITF"
       scp -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP":/tmp/ITF /tmp/ITF
@@ -114,7 +118,7 @@ for t in ${NODES_COUNT[@]}; do
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "nmcli con load /etc/sysconfig/network-scripts/ifcfg-"$ITF
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "nmcli con up 'System "$ITF"'" 
       fi
-    if [[ $osid == "413" ]]; then
+    if [[ $osid == "$UBUNTU" ]]; then
       echo "Ubuntu 20.10 Linux detected"
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "ip a | grep -iA2 '3: enp' | grep -i 'link/ether' | cut -d' ' -f6 > /tmp/MAC"
       ssh -i ~/.ssh/id_rsa -o "StrictHostKeyChecking=no" root@"$NODE_MAIN_IP" "ip a | grep -i '3: enp' | cut -d':' -f2 | tr -d ' ' > /tmp/ITF"
