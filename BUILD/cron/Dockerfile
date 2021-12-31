@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:20.04
 MAINTAINER docker@ekito.fr
 
 # Add crontab file in the cron directory
